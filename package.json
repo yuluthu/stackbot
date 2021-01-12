@@ -1,0 +1,16 @@
+{
+  "name": "stackbot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "dependencies": {
+    "discord.js": "^12.5.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "kill-exist": "pkill -f node",
+    "start": "nodemon ./"
+  },
+  "author": "",
+  "license": "ISC"
+}
