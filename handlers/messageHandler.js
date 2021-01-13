@@ -207,7 +207,7 @@ handler.new = ({channel, messageSplit, server}) => {
     var message = `
     New players for stack:`;
     for (i=0;i<=4;i++) {
-        if (stack[0]) {
+        if (state[server.id].queue[0]) {
             var thisUser = state[server.id].users[state[server.id].queue[0]]
             message += `
 <@${thisUser.user.id}>` + (thisUser.btag ? ', Battle Tag: ' + thisUser.btag : '') + ( thisUser.roles.length ? ', Roles:' + thisUser.roles.join(', ') : '')
