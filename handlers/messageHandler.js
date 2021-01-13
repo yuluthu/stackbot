@@ -180,7 +180,7 @@ handler.prioritise = ({msg, messageSplit, server}) => {
         if (v.indexOf('<@!') !== -1) {
             strip = v.substring(3, v.length -1);
             if (state[server.id].queue.indexOf(strip) == -1) {
-                handler.addUser({user: msg.mentions.users.get(strip), messageSplit: [], server});
+                handler.addUser({user: Object.assign({user: msg.mentions.users.get(strip)}, msg.mentions.users.get(strip)), messageSplit: [], server});
             }
             state[server.id].queue.splice(state[server.id].queue.indexOf(strip), 1);
             state[server.id].queue.splice(0, 0, strip);
