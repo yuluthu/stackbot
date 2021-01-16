@@ -47,8 +47,8 @@ commands = {
     toggleTest: {
     },
     testing: {
-
-    }
+    },
+    repeat: {}
 }
 
 handler.message = (msg) => {
@@ -56,7 +56,9 @@ handler.message = (msg) => {
     var server = channel.guild;
     var messageSplit = msg.content.split(' ');
 
-    if (messageSplit[0] === '!stack') {
+    if (msg.channel.type == 'dm') {
+        handler.respond({msg, messageSplit})
+    } else if (messageSplit[0] === '!stack') {
         if (!state[server.id]) {
             state[server.id] = {
                 testing: false,
@@ -266,6 +268,24 @@ handler.testing = ({user, server, msg}) => {
         state[server.id].testing = !state[server.id].testing;
     } else {
         msg.reply('Nope')
+    }
+}
+
+handler.repeat = ({msg, messageSplit}) => {
+    if (config.adminUserIds.indexOf(msg.author.id) !== -1) {  
+        var splitInclude = [];
+        messageSplit.forEach((v, i) => {
+            if (i > 3) {
+                splitInclude.push(v);
+            }
+        });
+        // console.log(client.channels.cache.get(messageSplit[2]));
+        // client.channels.cache.get(messageSplit[2]).send(splitInclude.join(' '));
+        client.guilds.cache.get(messageSplit[2]).channels.cache.get(messageSplit[3]).send(splitInclude.join(' '));
+        // var Legs = new Discord.Guild(client, 430806010601537546);
+        // var stackChannel = new Discord.Channel()
+    } else {
+        msg.reply('That command does not exist');
     }
 }
 

@@ -2,7 +2,7 @@ const Discord = require("discord.js");
 const _ = require('lodash');
 const mysql = require('mysql');
 
-const client = new Discord.Client();
+client = new Discord.Client();
 path = require('path');
 config = require('./config')
 
