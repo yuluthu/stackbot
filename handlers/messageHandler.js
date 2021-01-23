@@ -19,7 +19,12 @@ commands = {
     },
     interest: {
         requireStack: true,
-
+    },
+    join: {
+        aliasTo: 'interest'
+    },
+    leave: {
+        aliasTo: 'remove'
     },
     remove: {
         requireStack: true,
@@ -48,7 +53,10 @@ commands = {
     },
     testing: {
     },
-    repeat: {}
+    repeat: {},
+    defer: {
+        requireStack: true
+    }
 }
 
 handler.message = (msg) => {
@@ -65,6 +73,7 @@ handler.message = (msg) => {
                 queueing: false,
                 users: {},
                 queue: [],
+                lastStack: [],
                 log: []
             }
         }
@@ -79,6 +88,10 @@ handler.message = (msg) => {
 
 handler.respond = ({user, messageSplit, msg, server, channel}) => {
     var command = messageSplit[1].toLowerCase();
+    if (commands[command].aliasTo) {
+        command = commands[command].aliasTo
+    }
+    
     if (commands[command]) {
         var responded = false;
     
@@ -104,7 +117,6 @@ handler.queue = ({channel, server}) => {
         channel.send('There are currently no users in the queue');
     } else {
         var message = '';
-        console.log(state[server.id]);
         state[server.id].queue.forEach(v => {
             var thisUser = state[server.id].users[v];
             if (message !== '') {
@@ -117,9 +129,9 @@ handler.queue = ({channel, server}) => {
 }
 
 handler.remove = ({msg, user, server}) => {
-    if (state[server.id].users[user.id]) {
-        delete state[server.id].users[user.id];
-        state[server.id].queue.splice(state[server.id].queue.indexOf(user.id), 1);
+    var index = state[server.id].queue.indexOf(user.id)
+    if (index !== -1) {
+        state[server.id].queue.splice(index, 1);
         msg.reply('You have been removed from the queue');
     } else {
         msg.reply('You are not currently in the queue');
@@ -127,7 +139,7 @@ handler.remove = ({msg, user, server}) => {
 }
 
 handler.interest = ({msg, server, user, messageSplit}) => {
-    if (state[server.id].users[user.id]) {
+    if (state[server.id].queue.indexOf(user.id) !== -1) {
         msg.reply('You are already in the queue');
     } else {
         handler.addUser({user, messageSplit, server});
@@ -197,7 +209,6 @@ handler.removeusers = ({msg, messageSplit, server}) => {
             var strip = v.substring(3, v.length -1);
             if (state[server.id].queue.indexOf(strip) !== -1) {
                 state[server.id].queue.splice(state[server.id].queue.indexOf(strip), 1);
-                delete state[server.id].users[strip];
             }
         }
     });
@@ -206,23 +217,64 @@ handler.removeusers = ({msg, messageSplit, server}) => {
 
 handler.new = ({channel, messageSplit, server}) => {
     // TODO: make this allow a custom number of retrievals
-    var message = `
-    New players for stack:`;
-    for (i=0;i<=4;i++) {
-        if (state[server.id].queue[0]) {
-            var thisUser = state[server.id].users[state[server.id].queue[0]]
-            message += `
+    if (state[server.id].queue.length == 0) {
+        channel.send('There is nobody in the queue')
+    } else {
+        state[server.id].lastStack = [];
+        var message = `
+        New players for stack:`;
+        for (i=0;i<=0;i++) {
+            if (state[server.id].queue[0]) {
+                var thisUser = state[server.id].users[state[server.id].queue[0]]
+                message += `
 <@${thisUser.user.id}>` + (thisUser.btag ? ', Battle Tag: ' + thisUser.btag : '') + ( thisUser.roles.length ? ', Roles:' + thisUser.roles.join(', ') : '')
-            delete state[server.id].queue[0];
-            state[server.id].queue.splice(0, 1);
+                state[server.id].queue.splice(0, 1);
+                state[server.id].lastStack.push(thisUser.user.id);
+            }
         }
+        channel.send(message);
     }
-    channel.send(message);
+}
+
+handler.defer = ({msg, channel, server, user}) => {
+    var index = state[server.id].lastStack.indexOf(user.id);
+    if (index !== -1) {
+        if (state[server.id].queue.indexOf(user.id) !== -1) {
+            msg.reply('You have already deferred your position in this stack');
+        } else {
+            var newUser = handler.getNewStackUser(0, server);
+            if (newUser) {
+                var message = `The new user is <@${newUser.user.id}>` + (newUser.btag ? ', Battle Tag: ' + newUser.btag : '') + ( newUser.roles.length ? ', Roles:' + newUser.roles.join(', ') : '') + ', You have been moved back to the front of the queue'
+                state[server.id].queue.splice(state[server.id].queue.indexOf(newUser.user.id), 1);
+                state[server.id].lastStack.push(newUser.user.id);
+                channel.send(message);
+            } else {
+                msg.reply('Could not find a user to replace you with')
+            }
+            state[server.id].queue.splice(0, 0, user.id);
+        }
+    } else {
+        msg.reply('You are not in the current stack');
+    }
+}
+
+handler.getNewStackUser = (index, server) => {
+    var newUser = state[server.id].queue[index]
+
+    if (newUser !== undefined && state[server.id].lastStack.indexOf(newUser) == -1) {
+        return state[server.id].users[newUser];
+    } 
+    if (newUser == undefined) {
+        return false;
+    }
+    
+    return handler.getNewStackUser(index + 1, server);
 }
 
 handler.cancel = ({msg, server}) => {
     state[server.id] = Object.assign(state[server.id], {
         users: {},
+        lastStack: [],
         queueing: false,
         queue: []
     });
@@ -251,9 +303,9 @@ handler.addUser = ({user, messageSplit, server}) => {
             case 'int':
                 v = 'damage';
             case 'support':
+            case 'healer':
             case 'tank':
             case 'damage':
-            case 'healer':
             case 'flex':
                 roles.push(v.charAt(0).toUpperCase() + v.slice(1));
         }
@@ -279,7 +331,6 @@ handler.repeat = ({msg, messageSplit}) => {
                 splitInclude.push(v);
             }
         });
-        // console.log(client.channels.cache.get(messageSplit[2]));
         // client.channels.cache.get(messageSplit[2]).send(splitInclude.join(' '));
         client.guilds.cache.get(messageSplit[2]).channels.cache.get(messageSplit[3]).send(splitInclude.join(' '));
         // var Legs = new Discord.Guild(client, 430806010601537546);
