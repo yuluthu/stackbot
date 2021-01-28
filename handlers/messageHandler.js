@@ -223,7 +223,7 @@ handler.new = ({channel, messageSplit, server}) => {
         state[server.id].lastStack = [];
         var message = `
         New players for stack:`;
-        for (i=0;i<=0;i++) {
+        for (i=0;i<=4;i++) {
             if (state[server.id].queue[0]) {
                 var thisUser = state[server.id].users[state[server.id].queue[0]]
                 message += `
