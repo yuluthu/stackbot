@@ -49,7 +49,7 @@ commands = {
     queue: {
         requireStack: true
     },
-    toggleTest: {
+    testcommand: {
     },
     testing: {
     },
@@ -88,10 +88,13 @@ handler.message = (msg) => {
 
 handler.respond = ({user, messageSplit, msg, server, channel}) => {
     var command = messageSplit[1].toLowerCase();
-    if (commands[command].aliasTo) {
+
+    if (commands[command] && commands[command].aliasTo) {
         command = commands[command].aliasTo
     }
     
+    console.log(command, commands);
+
     if (commands[command]) {
         var responded = false;
     
@@ -321,6 +324,19 @@ handler.testing = ({user, server, msg}) => {
     } else {
         msg.reply('Nope')
     }
+}
+
+handler.testcommand = ({user, server, msg}) => {
+    var result = db.query('SELECT * FROM admin-roles', (err, result) => {
+        if (err) {
+            return err
+        }
+        return result ? result : ''
+    })
+
+    console.log(result)
+
+    msg.reply(result)
 }
 
 handler.repeat = ({msg, messageSplit}) => {

@@ -1,11 +1,17 @@
 const Discord = require("discord.js");
 const _ = require('lodash');
-const mysql = require('mysql');
+mysql = require('mysql');
 
 client = new Discord.Client();
 path = require('path');
 config = require('./config')
 
+db = require('./classes/database');
+db.connect();
+
+// var bee = db.read('admin-roles', ['guildID'], {id: 2}, {callback: (results) => {
+//     console.log(results, 'aaaa')
+// }});
 
 state = {}
 var messageHandler = require('./handlers/messageHandler');
@@ -41,5 +47,7 @@ function addUser(split, user) {
     stack.push(user.id);
     users[user.id] = {user, btag, roles};
 }
+
+db.end()
 
 client.login(config.botKey);
