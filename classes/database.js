@@ -29,11 +29,23 @@ db.update = (table, fields, where) => {
 
 }
 
-db.read = (table, fields, where, options) => {
+db.read = async (table, fields, where, options) => {
     where = db.getWhereSQL(where);
-    
-    var results = db.query('SELECT ' + db.getFieldsSQL(fields) + ' FROM `' + table + '`' + where.SQL, where.params, options);
-    return results;
+    return new Promise((resolve, reject) => {
+        db.query('SELECT ' + db.getFieldsSQL(fields) + ' FROM `' + table + '`' + where.SQL, where.params, {callback: (results) => {
+            resolve(results);
+        }});
+    })
+
+}
+
+db.customQuery = async (sql, params) => {
+    return new Promise((resolve, reject) => {
+        db.query(sql, params, {callback: (results) => {
+            resolve(results);
+        }});
+    })
+
 }
 
 db.delete = (table, where) => {

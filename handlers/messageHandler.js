@@ -1,70 +1,16 @@
-const config = require("../config");
+// const backend = require('./backend');
 
-var handler = {
-
-};
-
-commands = {
-    clear: {
-        isAdmin: true,
-        requireStack: true,
-    },
-    cancel: {
-        requireStack: true,
-        isAdmin: true,
-    },
-    begin: {
-        isAdmin: true,
-
-    },
-    interest: {
-        requireStack: true,
-    },
-    join: {
-        aliasTo: 'interest'
-    },
-    leave: {
-        aliasTo: 'remove'
-    },
-    remove: {
-        requireStack: true,
-    },
-    prioritise: {
-        isAdmin: true,
-        requireStack: true
-
-    },
-    new: {
-        isAdmin: true,
-        requireStack: true
-
-    },
-    removeusers: {
-        isAdmin: true,
-        requireStack: true
-    },
-    help: {
-
-    },
-    queue: {
-        requireStack: true
-    },
-    testcommand: {
-    },
-    testing: {
-    },
-    repeat: {},
-    defer: {
-        requireStack: true
-    }
-};
+var handler = {};
+// var commands = backend.getCommands().then(result => {
+//     return result
+// });
 
 handler.message = (msg) => {
+    console.log(commands)
     var channel = msg.channel;
     var server = channel.guild;
     var messageSplit = msg.content.split(' ');
-
-    if (msg.channel.type == 'dm') {
+    if (channel.type == 'dm') {
         handler.respond({ msg, messageSplit });
     } else if (messageSplit[0] === '!stack') {
         if (!state[server.id]) {
@@ -79,7 +25,7 @@ handler.message = (msg) => {
         }
 
         server.members.fetch(msg.author.id).then(user => {
-            user.isAdmin = user.roles.cache.has(config.adminUserRole) || (config.adminUserIds.indexOf(user.id) !== -1 && state[server.id].testing);
+            user.isAdmin = user.roles.cache.some(role => config[server.id].adminUserRoles.indexOf(role.id) !== -1);
             return { user, messageSplit, msg, server, channel };
         }).then(handler.respond);
     }
@@ -92,8 +38,6 @@ handler.respond = ({ user, messageSplit, msg, server, channel }) => {
     if (commands[command] && commands[command].aliasTo) {
         command = commands[command].aliasTo;
     }
-
-    console.log(command, commands);
 
     if (commands[command]) {
         var responded = false;
