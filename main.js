@@ -1,48 +1,58 @@
 const Discord = require("discord.js");
 const _ = require('lodash');
-
-client = new Discord.Client();
+const { MongoClient } = require("mongodb");
+discordClient = new Discord.Client();
 path = require('path');
 config = require('./config')
 
-// db = require('./classes/database');
-// db.connect();
 
-state = {}
-var messageHandler = require('./handlers/messageHandler');
+let uri = 'mongodb://' + config.mongo.username + ':' + config.mongo.password + '@' + config.mongo.host + ':' + config.mongo.port + '?retryWrites=true&writeConcern=majority';
+dbClient = new MongoClient(uri);
+async function run() {
+    try {
+        await dbClient.connect();
+        db = dbClient.db(config.mongo.database)
 
+        backend = require('./handlers/backend');
 
-client.on('ready', () => {
-  console.log(`Logged in as ${client.user.tag}!`);
-});
+        state = backend.getServerInfo()
 
-client.on('message', messageHandler.message);
+        var messageHandler = require('./handlers/messageHandler');
 
-function addUser(split, user) {
-    var btag = ''
-                    
-    var roles = [];
-    
-    split.forEach(v => {
-        if (v && v.indexOf('#') !== -1) {
-            btag = v;
+        discordClient.on('ready', () => {
+          console.log(`Logged in as ${discordClient.user.tag}!`);
+        });
+        
+        discordClient.on('message', messageHandler.message);
+        
+        function addUser(split, user) {
+            var btag = ''
+                            
+            var roles = [];
+            
+            split.forEach(v => {
+                if (v && v.indexOf('#') !== -1) {
+                    btag = v;
+                }
+                switch (v.toLowerCase()) {
+                    case 'dps':
+                    case 'int':
+                        v = 'damage';
+                    case 'support':
+                    case 'tank':
+                    case 'damage':
+                    case 'healer':
+                        roles.push(v);
+                }
+            })
+        
+            stack.push(user.id);
+            users[user.id] = {user, btag, roles};
         }
-        switch (v.toLowerCase()) {
-            case 'dps':
-            case 'int':
-                v = 'damage';
-            case 'support':
-            case 'tank':
-            case 'damage':
-            case 'healer':
-                roles.push(v);
-        }
-    })
+        discordClient.login(config.botKey);
+    } finally {
+        await dbClient.close()
+    }  
+}    
 
-    stack.push(user.id);
-    users[user.id] = {user, btag, roles};
-}
-
-// db.end()
-
-client.login(config.botKey);
+run().catch(console.dir)

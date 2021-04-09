@@ -1,12 +1,10 @@
-// const backend = require('./backend');
+const backend = require("./backend");
+
+commands = backend.getCommands()
 
 var handler = {};
-// var commands = backend.getCommands().then(result => {
-//     return result
-// });
 
 handler.message = (msg) => {
-    console.log(commands)
     var channel = msg.channel;
     var server = channel.guild;
     var messageSplit = msg.content.split(' ');
@@ -14,18 +12,11 @@ handler.message = (msg) => {
         handler.respond({ msg, messageSplit });
     } else if (messageSplit[0] === '!stack') {
         if (!state[server.id]) {
-            state[server.id] = {
-                testing: false,
-                queueing: false,
-                users: {},
-                queue: [],
-                lastStack: [],
-                log: []
-            };
+            backend.saveServer(server.id);
         }
 
         server.members.fetch(msg.author.id).then(user => {
-            user.isAdmin = user.roles.cache.some(role => config[server.id].adminUserRoles.indexOf(role.id) !== -1);
+            user.isAdmin = user.roles.cache.some(role => config.adminUserRoles[server.id].indexOf(role.id) !== -1);
             return { user, messageSplit, msg, server, channel };
         }).then(handler.respond);
     }

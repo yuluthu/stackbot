@@ -1,41 +1,50 @@
-const db = require("../classes/database");
-
 var backend = {
-    getCommands: async () => {
-        return new Promise(resolve => {
-            var commands = {}
-            db.read('commands', ['*']).then(result => {
-                result.forEach((row) => {
-                    commands[row.name] = backend.getOptions(row.id, commands[row.name])
-                })
+    getCommands: () => {
+        let result = {}
+        let commandsCollection = db.collection('commands')
+        let search = commandsCollection.find({});
+        search.forEach(command => {
+            result[command.name] = command;
+        });
+        return result;
+    },
+    getServerInfo: () => {
+        let result = {}
+        let queueCollection = db.collection('queues')
+        let serversCollection = db.collection('servers');
+        
+        let search = serversCollection.find({status: 1});
+        search.forEach(server => {
+            let thisServer = {
+                testing: false,
+                queueing: false,
+                users: {},
+                queue: [],
+                lastStack: [],
+                log: []
+            };
 
-                resolve(commands)
-            });
-        });
-    },
-    getOptions: (id) => {
-        var options = {}
-        db.read('commands_properties', ['*'], {commandID: id}).then(result => {
-            result.forEach(row => {
-                if (row.property == 'aliasTo') {
-                    options[row.property] = backend.getCommandName(row.value, options[row.property])
-                } else {
-                    options[row.property] = row.value
-                }
-            });
+            let queueSearch = queueCollection.find({serverId: server.discordId})
+            queueSearch.forEach(entry => {
+                thisServer.queue.push(entry)
+            })
+
+
+            state[server.discordId] = thisServer;
         })
-        return options;
+
+        return result;
     },
-    getCommandName: (id) => {
-        let name = false;
-        db.read('commands', ['*'], {id: id}).then(result => {
-            result.forEach(result => {
-                name = result.name
-                target = name;
-            });
-        });
-        return name
-    }
+    saveServer: (id) => {
+        state[id] = {
+            testing: false,
+            queueing: false,
+            users: {},
+            queue: [],
+            lastStack: [],
+            log: []
+        };
+    },
 };
 
 
