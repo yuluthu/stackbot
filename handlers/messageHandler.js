@@ -1,29 +1,25 @@
 const backend = require("./backend");
 
 commands = backend.getCommands()
-
 var handler = {};
 
-handler.message = (msg) => {
+handler.message = async (msg) => {
     var channel = msg.channel;
     var server = channel.guild;
     var messageSplit = msg.content.split(' ');
     if (channel.type == 'dm') {
         handler.respond({ msg, messageSplit });
     } else if (messageSplit[0] === '!stack') {
-        if (!state[server.id]) {
-            backend.saveServer(server.id);
-        }
-
+        await backend.getServerRoles(server.id)
         server.members.fetch(msg.author.id).then(user => {
-            user.isAdmin = user.roles.cache.some(role => config.adminUserRoles[server.id].indexOf(role.id) !== -1);
+            user.isAdmin = user.roles.cache.some(role => config.adminUserRoles[server.id].indexOf(role.id) !== -1) || user.user.id == '157941034897244160';
             return { user, messageSplit, msg, server, channel };
         }).then(handler.respond);
     }
 
 };
 
-handler.respond = ({ user, messageSplit, msg, server, channel }) => {
+handler.respond = async ({ user, messageSplit, msg, server, channel }) => {
     var command = messageSplit[1].toLowerCase();
 
     if (commands[command] && commands[command].aliasTo) {
@@ -38,10 +34,12 @@ handler.respond = ({ user, messageSplit, msg, server, channel }) => {
             responded = true;
         }
 
-        if (commands[command].requireStack && !state[server.id].queueing) {
+        let isStacking = await backend.isStacking(server.id)
+        if (commands[command].requireStack && !isStacking) {
             handler.noStack({ msg });
             responded = true;
         }
+
         if (!responded) {
             handler[command]({ msg, user, server, channel, messageSplit });
         }
@@ -50,38 +48,38 @@ handler.respond = ({ user, messageSplit, msg, server, channel }) => {
     }
 };
 
-handler.queue = ({ channel, server }) => {
-    if (state[server.id].queue.length == 0) {
+handler.queue = async ({ channel, server }) => {
+    let result = await backend.getQueue(server.id)
+
+    if (result.length == 0) {
         channel.send('There are currently no users in the queue');
     } else {
         var message = '';
-        state[server.id].queue.forEach(v => {
-            var thisUser = state[server.id].users[v];
+        result.forEach(v => {
             if (message !== '') {
-                message += ', ';
+                message += ',   ';
             }
-            message += thisUser.user.user.username;
+            message += v.name;
         });
         channel.send('The queue currently is: ' + message);
     }
 };
 
-handler.remove = ({ msg, user, server }) => {
-    var index = state[server.id].queue.indexOf(user.id);
-    if (index !== -1) {
-        state[server.id].queue.splice(index, 1);
+handler.remove = async ({ msg, user, server }) => {
+    let removed = await backend.removeFromQueue(server.id, user.id)
+    if (removed) {
         msg.reply('You have been removed from the queue');
     } else {
         msg.reply('You are not currently in the queue');
     }
 };
 
-handler.interest = ({ msg, server, user, messageSplit }) => {
-    if (state[server.id].queue.indexOf(user.id) !== -1) {
-        msg.reply('You are already in the queue');
-    } else {
-        handler.addUser({ user, messageSplit, server });
+handler.interest = async ({ msg, server, user, messageSplit }) => {
+    let inQueue = await backend.addToQueue(server.id, user);
+    if (inQueue) {
         msg.reply('You have been added to the queue');
+    } else {
+        msg.reply('You are already in the queue');
     }
 };
 
@@ -92,7 +90,7 @@ handler.help = ({ channel }) => {
     \`\`\`
     * remove: Removes yourself from the stack queue, if you are in it.
     
-    * interest: Registers your interest in joining the stack, and adds you to the end. If legs doesn't have you added, please include your battle tag. Additionally, you can include which roles you wish to play (tank/damage/support) (ex. !stack interest yuluthu#2484 support)
+    * interest: Registers your interest in joining the stack, and adds you to the queue.
     
     * queue: Displays the current queue.
     
@@ -119,23 +117,20 @@ handler.notAdmin = ({ msg }) => {
     msg.reply('You don\'t have permission to execute that command');
 };
 
-handler.clear = ({ msg, server }) => {
-    state[server.id] = Object.assign(state[server.id], {
-        users: {},
-        queue: []
-    });
-    msg.reply('Queue cleared');
+handler.clear = async ({ msg, server }) => {
+    let cleared = await backend.clearQueue(server.id);
+    if (cleared) {
+        msg.reply('Queue cleared');
+    } else {
+        msg.reply('No users in queue');
+    }
 };
 
 handler.prioritise = ({ msg, messageSplit, server }) => {
     messageSplit.forEach((v) => {
         if (v.indexOf('<@!') !== -1) {
             strip = v.substring(3, v.length - 1);
-            if (state[server.id].queue.indexOf(strip) == -1) {
-                handler.addUser({ user: Object.assign({ user: msg.mentions.users.get(strip) }, msg.mentions.users.get(strip)), messageSplit: [], server });
-            }
-            state[server.id].queue.splice(state[server.id].queue.indexOf(strip), 1);
-            state[server.id].queue.splice(0, 0, strip);
+            backend.addToQueue(server.id, msg.mentions.users.get(strip), true)
         }
     });
     msg.reply('Users have been moved to the front of the queue');
@@ -145,148 +140,99 @@ handler.removeusers = ({ msg, messageSplit, server }) => {
     messageSplit.forEach((v) => {
         if (v.indexOf('<@!') !== -1) {
             var strip = v.substring(3, v.length - 1);
-            if (state[server.id].queue.indexOf(strip) !== -1) {
-                state[server.id].queue.splice(state[server.id].queue.indexOf(strip), 1);
-            }
+            backend.removeFromQueue(server.id, strip)
         }
     });
     msg.reply('Those users have been removed from the queue');
 };
 
-handler.new = ({ channel, messageSplit, server }) => {
+handler.new = async ({ channel, messageSplit, server }) => {
     // TODO: make this allow a custom number of retrievals
-    if (state[server.id].queue.length == 0) {
+    let number = 5;
+
+    if (parseInt(messageSplit[2])) {
+        number = parseInt(messageSplit[2]);
+    }
+
+    var queue = await backend.getQueue(server.id, number)
+    if (queue.length == 0) {
         channel.send('There is nobody in the queue');
     } else {
-        state[server.id].lastStack = [];
+        
         var message = `
         New players for stack:`;
-        for (i = 0; i <= 4; i++) {
-            if (state[server.id].queue[0]) {
-                var thisUser = state[server.id].users[state[server.id].queue[0]];
-                message += `
-<@${thisUser.user.id}>` + (thisUser.btag ? ', Battle Tag: ' + thisUser.btag : '') + (thisUser.roles.length ? ', Roles:' + thisUser.roles.join(', ') : '');
-                state[server.id].queue.splice(0, 1);
-                state[server.id].lastStack.push(thisUser.user.id);
-            }
-        }
+        queue.forEach(queueMember => {
+            message += `
+<@${queueMember.user}>`;
+
+            backend.removeFromQueue(server.id, queueMember.user)
+        })
         channel.send(message);
     }
 };
 
-handler.defer = ({ msg, channel, server, user }) => {
-    var index = state[server.id].lastStack.indexOf(user.id);
-    if (index !== -1) {
-        if (state[server.id].queue.indexOf(user.id) !== -1) {
-            msg.reply('You have already deferred your position in this stack');
-        } else {
-            var newUser = handler.getNewStackUser(0, server);
-            if (newUser) {
-                var message = `The new user is <@${newUser.user.id}>` + (newUser.btag ? ', Battle Tag: ' + newUser.btag : '') + (newUser.roles.length ? ', Roles:' + newUser.roles.join(', ') : '') + ', You have been moved back to the front of the queue';
-                state[server.id].queue.splice(state[server.id].queue.indexOf(newUser.user.id), 1);
-                state[server.id].lastStack.push(newUser.user.id);
-                channel.send(message);
-            } else {
-                msg.reply('Could not find a user to replace you with');
-            }
-            state[server.id].queue.splice(0, 0, user.id);
-        }
-    } else {
-        msg.reply('You are not in the current stack');
-    }
-};
+// handler.defer = async ({ msg, channel, server, user }) => {
+//     var newUser = await backend.getQueue(server.id, 1, true)
+//     console.log(newUser)
+//     if (newUser.length) {
 
-handler.getNewStackUser = (index, server) => {
-    var newUser = state[server.id].queue[index];
+//     } else {
+//         msg.reply('Could not get replacement user')
+//     }
 
-    if (newUser !== undefined && state[server.id].lastStack.indexOf(newUser) == -1) {
-        return state[server.id].users[newUser];
-    }
-    if (newUser == undefined) {
-        return false;
-    }
+// };
 
-    return handler.getNewStackUser(index + 1, server);
-};
-
-handler.cancel = ({ msg, server }) => {
-    state[server.id] = Object.assign(state[server.id], {
-        users: {},
-        lastStack: [],
-        queueing: false,
-        queue: []
-    });
-    msg.reply('Queue Ended');
-};
-
-handler.begin = ({ msg, server }) => {
-    if (state[server.id].queueing) {
-        msg.reply('There is already a stack in progress.');
-    } else {
-        state[server.id].queueing = true;
-        msg.reply('Stacking begun');
-    }
-};
-
-handler.addUser = ({ user, messageSplit, server }) => {
-    var btag = '';
-    var roles = [];
-
+handler.designaterole = async ({ msg, messageSplit, server }) => {
     messageSplit.forEach(v => {
-        if (v && v.indexOf('#') !== -1) {
-            btag = v;
-        }
-        switch (v.toLowerCase()) {
-            case 'dps':
-            case 'int':
-                v = 'damage';
-            case 'support':
-            case 'healer':
-            case 'tank':
-            case 'damage':
-            case 'flex':
-                roles.push(v.charAt(0).toUpperCase() + v.slice(1));
+        if (v.indexOf('<@&') !== -1) {
+            strip = v.substring(3, v.length - 1);
+            backend.designateRole(server.id, strip);
         }
     });
+}
 
-    state[server.id].queue.push(user.id);
-    state[server.id].users[user.id] = { user, btag, roles };
-};
+handler.removerole = async ({ msg, messageSplit, server }) => {
+    messageSplit.forEach(v => {
+        if (v.indexOf('<@&') !== -1) {
+            strip = v.substring(3, v.length - 1);
+            backend.removeRole(server.id, strip);
+        }
+    });
+}
 
-handler.testing = ({ user, server, msg }) => {
-    if (config.adminUserIds.indexOf(user.id) !== -1) {
-        state[server.id].testing = !state[server.id].testing;
+handler.cancel = async ({ msg, server }) => {
+    let cancelled = await backend.cancelQueue(server.id)
+    if (cancelled) {
+        msg.reply('Queue Ended');
     } else {
-        msg.reply('Nope');
+        msg.reply('No queue in progress');
     }
 };
 
-handler.testcommand = ({ user, server, msg }) => {
-    var result = db.query('SELECT * FROM admin-roles', (err, result) => {
-        if (err) {
-            return err;
-        }
-        return result ? result : '';
-    });
-
-    msg.reply(result);
-};
-
-handler.repeat = ({ msg, messageSplit }) => {
-    if (config.adminUserIds.indexOf(msg.author.id) !== -1) {
-        var splitInclude = [];
-        messageSplit.forEach((v, i) => {
-            if (i > 3) {
-                splitInclude.push(v);
-            }
-        });
-        // client.channels.cache.get(messageSplit[2]).send(splitInclude.join(' '));
-        client.guilds.cache.get(messageSplit[2]).channels.cache.get(messageSplit[3]).send(splitInclude.join(' '));
-        // var Legs = new Discord.Guild(client, 430806010601537546);
-        // var stackChannel = new Discord.Channel()
+handler.begin = async ({ msg, server }) => {
+    let begun = await backend.startQueue(server.id);
+    if (begun) {
+        msg.reply('Stacking begun');
     } else {
-        msg.reply('That command does not exist');
+        msg.reply('There is already a stack in progress.');
     }
 };
+
+// handler.repeat = ({ msg, messageSplit }) => {
+//     if (config.adminUserIds.indexOf(msg.author.id) !== -1) {
+//         var splitInclude = [];
+//         messageSplit.forEach((v, i) => {
+//             if (i > 3) {
+//                 splitInclude.push(v);
+//             }
+//         });
+//         // client.channels.cache.get(messageSplit[2]).send(splitInclude.join(' '));
+//         client.guilds.cache.get(messageSplit[2]).channels.cache.get(messageSplit[3]).send(splitInclude.join(' '));
+//         // var Legs = new Discord.Guild(client, 430806010601537546);
+//         // var stackChannel = new Discord.Channel()
+//     } else {
+//         msg.reply('That command does not exist');
+//     }
+// };
 
 module.exports = handler;

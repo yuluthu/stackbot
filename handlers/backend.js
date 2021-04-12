@@ -1,3 +1,5 @@
+const config = require("../config");
+
 var backend = {
     getCommands: () => {
         let result = {}
@@ -8,44 +10,126 @@ var backend = {
         });
         return result;
     },
-    getServerInfo: () => {
-        let result = {}
-        let queueCollection = db.collection('queues')
-        let serversCollection = db.collection('servers');
-        
-        let search = serversCollection.find({status: 1});
-        search.forEach(server => {
-            let thisServer = {
-                testing: false,
-                queueing: false,
-                users: {},
-                queue: [],
-                lastStack: [],
-                log: []
-            };
-
-            let queueSearch = queueCollection.find({serverId: server.discordId})
-            queueSearch.forEach(entry => {
-                thisServer.queue.push(entry)
-            })
-
-
-            state[server.discordId] = thisServer;
-        })
-
-        return result;
+    getServerRoles: async (serverId) => {
+        let rolesCollection = db.collection('admin_roles');
+        let roles = await rolesCollection.find({serverId}).toArray();
+        config.adminUserRoles[serverId] = roles.map(v => v.roleId);
+        return true;
     },
-    saveServer: (id) => {
-        state[id] = {
-            testing: false,
-            queueing: false,
-            users: {},
-            queue: [],
-            lastStack: [],
-            log: []
-        };
+    isStacking: async (serverId) => {
+        let serversCollection = db.collection('servers');
+        let server = await serversCollection.findOne({serverId});
+        if (server) {
+            return server.stacking;
+        }
+        backend.saveServer(serverId);
+        return false;
+    },
+    getQueue: (serverId, count, noDefer) => {
+        let queuesCollection = db.collection('queues')
+        let options = {sort: {priority: -1, dateJoined: 1}};
+        if (count) {
+            options.limit = count;
+        }
+
+        let filters = {serverId};
+
+        if (noDefer === true) {
+            filters.priority = {$lt: 3};
+        }
+
+        var search = queuesCollection.find(filters, options);
+
+        return search.toArray();
+
+    },
+    removeFromQueue: async (serverId, userId) => {
+        let queuesCollection = db.collection('queues')
+
+        let search = await queuesCollection.findOne({serverId, user: userId});
+        if (!search) {
+            return false;
+        }
+        queuesCollection.deleteOne({serverId, user: userId})
+
+        return true;
+    },
+    designateRole: async (serverId, roleId) => {
+        let rolesCollection = db.collection('admin_roles');
+        let role = await rolesCollection.findOne({serverId, roleId});
+        if (!role) {
+            rolesCollection.insertOne({serverId, roleId});
+            return true;
+        }
+        return false
+    }, 
+    removeRole: async (serverId, roleId) => {
+        let rolesCollection = db.collection('admin_roles');
+        let role = await rolesCollection.findOne({serverId, roleId});
+        if (role) {
+            rolesCollection.removeOne({serverId, roleId});
+            return true;
+        }
+        return false
+    },
+    addToQueue: async (serverId, user, priority) => {
+        if (priority == undefined) {
+            priority = 0
+        }
+        let queuesCollection = db.collection('queues')
+        let search = await queuesCollection.findOne({serverId, user: user.id});
+        if (search) {
+            return false;
+        }
+        queuesCollection.insertOne({user: user.id, name: user.user.username, priority: priority, serverId, dateJoined: new Date()})
+
+        return true;
+    },
+    startQueue: async (serverId) => {
+        let serversCollection = db.collection('servers')
+        let search = await serversCollection.findOne({serverId});
+        if (search) {
+            if (search.stacking) {
+                return false;
+            }
+        } else {
+            await backend.saveServer(serverId);
+        }
+        await serversCollection.updateOne({serverId}, {$set: {stacking: true}});
+        return true
+    },
+    clearQueue: async (serverId) => {
+        let queuesCollection = db.collection('queues')
+
+        let search = await queuesCollection.findOne({serverId});
+        if (!search) {
+            return false;
+        }
+        queuesCollection.deleteMany({serverId})
+
+        return true;
+    },
+    cancelQueue: async (serverId) => {
+        await backend.clearQueue(serverId);
+        let serversCollection = db.collection('servers')
+        let search = await serversCollection.findOne({serverId});
+        if (search) {
+            if (!search.stacking) {
+                return false;
+            }
+        } else {
+            await backend.saveServer(serverId);
+        }
+        await serversCollection.updateOne({serverId}, {$set: {stacking: false}});
+        return true;
+    },
+    deferUser: (serverId, userId) => {
+
+    },
+    saveServer: async (id) => {
+        let serversCollection = db.collection('servers');
+        await serversCollection.insertOne({serverId: id, stacking: false})
+        return true
     },
 };
-
-
 module.exports = backend;

@@ -15,8 +15,6 @@ async function run() {
 
         backend = require('./handlers/backend');
 
-        state = backend.getServerInfo()
-
         var messageHandler = require('./handlers/messageHandler');
 
         discordClient.on('ready', () => {
@@ -51,7 +49,6 @@ async function run() {
         }
         discordClient.login(config.botKey);
     } finally {
-        await dbClient.close()
     }  
 }    
 
