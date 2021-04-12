@@ -57,7 +57,7 @@ handler.queue = async ({ channel, server }) => {
         var message = '';
         result.forEach(v => {
             if (message !== '') {
-                message += ',   ';
+                message += ', ';
             }
             message += v.name;
         });
