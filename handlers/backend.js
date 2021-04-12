@@ -76,12 +76,17 @@ var backend = {
         if (priority == undefined) {
             priority = 0
         }
+
+        if (user.user) {
+            user = user.user
+        }
+
         let queuesCollection = db.collection('queues')
         let search = await queuesCollection.findOne({serverId, user: user.id});
         if (search) {
             return false;
         }
-        queuesCollection.insertOne({user: user.id, name: user.user.username, priority: priority, serverId, dateJoined: new Date()})
+        queuesCollection.insertOne({user: user.id, name: user.username, priority: priority, serverId, dateJoined: new Date()})
 
         return true;
     },
