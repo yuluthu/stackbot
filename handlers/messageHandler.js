@@ -130,7 +130,7 @@ handler.prioritise = ({ msg, messageSplit, server }) => {
     messageSplit.forEach((v) => {
         if (v.indexOf('<@!') !== -1) {
             strip = v.substring(3, v.length - 1);
-            backend.addToQueue(server.id, msg.mentions.users.get(strip), true)
+            backend.addToQueue(server.id, msg.mentions.users.get(strip), 1)
         }
     });
     msg.reply('Users have been moved to the front of the queue');

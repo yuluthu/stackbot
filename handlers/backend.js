@@ -82,8 +82,10 @@ var backend = {
         }
 
         let queuesCollection = db.collection('queues')
-        let search = await queuesCollection.findOne({serverId, user: user.id});
+        let selector = {serverId, user: user.id};
+        let search = await queuesCollection.findOne(selector);
         if (search) {
+            queuesCollection.updateOne(selector, {$set: {priority}})
             return false;
         }
         queuesCollection.insertOne({user: user.id, name: user.username, priority: priority, serverId, dateJoined: new Date()})
