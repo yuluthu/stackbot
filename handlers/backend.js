@@ -11,8 +11,10 @@ var backend = {
         });
 
         Object.keys(result).forEach((key) => {
-            if (result[key].aliasTo) {
-                result[result[key].aliasTo].aliases.push(result[key].name);
+            let command = result[key]
+            console.log(command)
+            if (command.aliasTo) {
+                result[command.aliasTo].aliases.push(command.name);
             }
         });
         return result;
