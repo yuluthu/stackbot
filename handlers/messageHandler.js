@@ -98,11 +98,21 @@ handler.help = ({ channel }) => {
     Object.keys(commands).forEach((key) => {
         let command = commands[key];
         if (command.helpText) {
-            string += '* ' + command.name + ': ' + command.helpText + '\n\n';
+            string += '* ' + command.name + ': ' + command.helpText;
+
+            if (command.aliases) {
+                string += ' Aliases: ';
+
+                command.aliases.forEach(a => {
+                    string += a + ', ';
+                });
+                string = string.substr(0, string.length - 2);
+            }
+
+            string += '\n\n'
         }
     });
-    string += `
-    \`\`\``;
+    string = string.trim();
     channel.send(string);
 };
 
