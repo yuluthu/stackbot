@@ -12,7 +12,7 @@ var backend = {
 
         Object.keys(result).forEach((key) => {
             if (result[key].aliasTo) {
-                result[aliasTo].aliases.push(result[key].name);
+                result[result[key].aliasTo].aliases.push(result[key].name);
             }
         });
         return result;
