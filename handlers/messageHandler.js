@@ -88,7 +88,7 @@ handler.help = ({ channel }) => {
         let command = commands[key]
         console.log(command);
         if (command.aliasTo) {
-            result[command.aliasTo].aliases.push(command.name);
+            commands[command.aliasTo].aliases.push(command.name);
         }
     });
 
