@@ -9,7 +9,7 @@ var backend = {
             command.aliases = [];
             result[command.name] = command;
         });
-
+        console.log(result)
         Object.keys(result).forEach((key) => {
             let command = result[key]
             console.log(command);
