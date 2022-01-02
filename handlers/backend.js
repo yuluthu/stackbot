@@ -8,6 +8,12 @@ var backend = {
         search.forEach(command => {
             result[command.name] = command;
         });
+
+        Object.keys(result).forEach((key) => {
+            if (result[key].aliasTo) {
+                result[aliasTo].aliases = result[key].name;
+            }
+        });
         return result;
     },
     getServerRoles: async (serverId) => {

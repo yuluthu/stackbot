@@ -84,29 +84,20 @@ handler.interest = async ({ msg, server, user, messageSplit }) => {
 };
 
 handler.help = ({ channel }) => {
-    channel.send(`
+    let string = `
     Commands:
     All commands are prefixed with !stack to trigger this bot, such as "!stack begin"
-    \`\`\`
-    * remove: Removes yourself from the stack queue, if you are in it.
-    
-    * interest: Registers your interest in joining the stack, and adds you to the queue.
-    
-    * queue: Displays the current queue.
-    
-    * begin: Starts a new stack queue, if none is currently going.
-    
-    * clear: Clears the current stack queue.
-    
-    * cancel: Ends the current stack queue.
-    
-    * prioritise: Moves a tagged user (or users) to the front of the queue (ex. !stack prioritise @yuluthu)
-    
-    * new: Pulls the 5 people at the front of the queue, and removes them from the queue.
-    
-    * removeuser: Removes all tagged users from the queue (ex. !stack removeusers @yuluthu @legday)
-
-    \`\`\``);
+    \`\`\``;
+    Object.keys(commands).forEach((key) => {
+        let command = commands[key];
+        console.log(command)
+        if (commands.helpText) {
+            string += '* ' + commands.helpText;
+        }
+    });
+    string += `
+    \`\`\``;
+    channel.send(string);
 };
 
 handler.noStack = ({ msg }) => {
