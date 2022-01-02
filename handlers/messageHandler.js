@@ -227,6 +227,10 @@ handler.begin = async ({ msg, server }) => {
     }
 };
 
+handler.reloadcommands = async ({ msg, server }) => {
+    commands = backend.getCommands()
+};
+
 // handler.repeat = ({ msg, messageSplit }) => {
 //     if (config.adminUserIds.indexOf(msg.author.id) !== -1) {
 //         var splitInclude = [];

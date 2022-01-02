@@ -141,9 +141,5 @@ var backend = {
         await serversCollection.insertOne({serverId: id, stacking: false})
         return true
     },
-    help: async (commands) => {
-        let commandsCollection = db.collection('commends');
-
-    }
 };
 module.exports = backend;
