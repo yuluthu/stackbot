@@ -88,13 +88,13 @@ handler.help = ({ channel }) => {
     Commands:
     All commands are prefixed with !stack to trigger this bot, such as "!stack begin"
     \`\`\``;
-    console.log(commands)
-    // commands.forEach((command) => {
-    //     console.log(command)
-    //     if (commands.helpText) {
-    //         string += '* ' + command.name + ': ' + commands.helpText;
-    //     }
-    // });
+    commands.forEach((key) => {
+        let command = commands[key];
+        console.log(key, command)
+        if (commands.helpText) {
+            string += '* ' + command.name + ': ' + commands.helpText;
+        }
+    });
     string += `
     \`\`\``;
     channel.send(string);
