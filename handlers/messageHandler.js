@@ -100,7 +100,7 @@ handler.help = ({ channel }) => {
         if (command.helpText) {
             string += '* ' + command.name + ': ' + command.helpText;
 
-            if (command.aliases) {
+            if (command.aliases.length) {
                 string += ' Aliases: ';
 
                 command.aliases.forEach(a => {
