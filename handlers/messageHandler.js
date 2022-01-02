@@ -112,6 +112,8 @@ handler.help = ({ channel }) => {
             string += '\n\n'
         }
     });
+    string += '```';
+
     string = string.trim();
     channel.send(string);
 };
