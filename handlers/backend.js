@@ -6,12 +6,13 @@ var backend = {
         let commandsCollection = db.collection('commands')
         let search = commandsCollection.find({});
         search.forEach(command => {
+            command.aliases = [];
             result[command.name] = command;
         });
 
         Object.keys(result).forEach((key) => {
             if (result[key].aliasTo) {
-                result[aliasTo].aliases = result[key].name;
+                result[aliasTo].aliases.push(result[key].name);
             }
         });
         return result;
@@ -144,5 +145,9 @@ var backend = {
         await serversCollection.insertOne({serverId: id, stacking: false})
         return true
     },
+    help: async (commands) => {
+        let commandsCollection = db.collection('commends');
+
+    }
 };
 module.exports = backend;
