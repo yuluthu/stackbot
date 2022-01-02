@@ -88,7 +88,7 @@ handler.help = ({ channel }) => {
     Commands:
     All commands are prefixed with !stack to trigger this bot, such as "!stack begin"
     \`\`\``;
-    commands.forEach((key) => {
+    Object.keys(commands).forEach((key) => {
         let command = commands[key];
         console.log(key, command)
         if (commands.helpText) {
