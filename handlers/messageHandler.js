@@ -92,7 +92,7 @@ handler.help = ({ channel }) => {
         let command = commands[key];
         console.log(command)
         if (commands.helpText) {
-            string += '* ' + commands.helpText;
+            string += '* ' + command.name + ': ' + commands.helpText;
         }
     });
     string += `
