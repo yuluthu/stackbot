@@ -86,7 +86,6 @@ handler.interest = async ({ msg, server, user, messageSplit }) => {
 handler.help = ({ channel }) => {
     Object.keys(commands).forEach((key) => {
         let command = commands[key]
-        console.log(command);
         if (command.aliasTo) {
             commands[command.aliasTo].aliases.push(command.name);
         }
@@ -98,8 +97,7 @@ handler.help = ({ channel }) => {
     \`\`\``;
     Object.keys(commands).forEach((key) => {
         let command = commands[key];
-        console.log(key, command)
-        if (commands.helpText) {
+        if (command.helpText) {
             string += '* ' + command.name + ': ' + commands.helpText;
         }
     });
