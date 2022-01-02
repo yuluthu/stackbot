@@ -12,7 +12,7 @@ var backend = {
 
         Object.keys(result).forEach((key) => {
             let command = result[key]
-            console.log(command)
+            console.log(command);
             if (command.aliasTo) {
                 result[command.aliasTo].aliases.push(command.name);
             }
