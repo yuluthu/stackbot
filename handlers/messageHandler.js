@@ -98,7 +98,7 @@ handler.help = ({ channel }) => {
     Object.keys(commands).forEach((key) => {
         let command = commands[key];
         if (command.helpText) {
-            string += '* ' + command.name + ': ' + commands.helpText;
+            string += '* ' + command.name + ': ' + command.helpText + '\n\n';
         }
     });
     string += `
