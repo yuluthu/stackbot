@@ -4,7 +4,7 @@ var backend = {
     getCommands: () => {
         let result = {}
         let commandsCollection = db.collection('commands')
-        let search = commandsCollection.find({}).sort({isAdmin: 1});
+        let search = commandsCollection.find({}).sort({isAdmin: -1});
 
         search.forEach(command => {
             command.aliases = [];
