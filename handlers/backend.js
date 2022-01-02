@@ -4,23 +4,13 @@ var backend = {
     getCommands: () => {
         let result = {}
         let commandsCollection = db.collection('commands')
-        let search = commandsCollection.find({});
+        let search = commandsCollection.find({}).sort({isAdmin: 1});
+
         search.forEach(command => {
             command.aliases = [];
             result[command.name] = command;
         });
 
-        result.sort((x, y) => {
-            if (x.isAdmin && !y.isAdmin) {
-                return 1;
-            }
-
-            if (!x.isAdmin && y.isAdmin) {
-                return -1;
-            }
-
-            return 0;
-        })
         return result;
     },
     getServerRoles: async (serverId) => {
