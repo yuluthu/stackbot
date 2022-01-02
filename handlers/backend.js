@@ -9,9 +9,6 @@ var backend = {
             command.aliases = [];
             result[command.name] = command;
         });
-
-        console.log(result);
-
         return result;
     },
     getServerRoles: async (serverId) => {

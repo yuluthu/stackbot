@@ -84,6 +84,14 @@ handler.interest = async ({ msg, server, user, messageSplit }) => {
 };
 
 handler.help = ({ channel }) => {
+    Object.keys(commands).forEach((key) => {
+        let command = commands[key]
+        console.log(command);
+        if (command.aliasTo) {
+            result[command.aliasTo].aliases.push(command.name);
+        }
+    });
+
     let string = `
     Commands:
     All commands are prefixed with !stack to trigger this bot, such as "!stack begin"
