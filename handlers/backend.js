@@ -36,9 +36,9 @@ var backend = {
         let selector = {serverId, setting};
         let search = settingsCollection.findOne(selector);
         if (search) {
-            settingsCollection.updateOne(selector, {$set: {value}})
+            await settingsCollection.updateOne(selector, {$set: {value}});
         } else {
-            settingsCollection.insertOne({serverId, setting, value})
+            await settingsCollection.insertOne({serverId, setting, value});
         }
     },
     getServerRoles: async (serverId) => {
