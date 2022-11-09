@@ -45,6 +45,7 @@ handler.respond = async ({ user, messageSplit, msg, server, channel }) => {
             handler[command]({ msg, user, server, channel, messageSplit });
         }
     } else {
+        console.log(command)
         msg.reply('That command does not exist');
     }
 };
@@ -136,9 +137,11 @@ handler.clear = async ({ msg, server }) => {
     }
 };
 
-handler.updateSetting = ({ msg, messageSplit, server }) => {
+handler.updatesetting = ({ msg, messageSplit, server }) => {
     backend.setSetting(messageSplit[2], messageSplit[3], server.id);
     settings = backend.getSettings();
+
+    msg.reply('Setting updated')
 }
 
 handler.prioritise = ({ msg, messageSplit, server }) => {

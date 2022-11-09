@@ -31,10 +31,11 @@ var backend = {
         });
         return result;
     },
-    setSetting: (setting, value, serverId) => {
+    setSetting: async (setting, value, serverId) => {
         let settingsCollection = db.collection('settings');
         let selector = {serverId, setting};
-        let search = settingsCollection.findOne(selector);
+        let search = await settingsCollection.findOne(selector);
+        console.log(search);
         if (search) {
             await settingsCollection.updateOne(selector, {$set: {value}});
         } else {
