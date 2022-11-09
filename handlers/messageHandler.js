@@ -137,7 +137,7 @@ handler.clear = async ({ msg, server }) => {
 };
 
 handler.updateSetting = ({ msg, messageSplit, server }) => {
-    backend.setSetting(messageSplit[1], messageSplit[2], server.id);
+    backend.setSetting(messageSplit[2], messageSplit[3], server.id);
     settings = backend.getSettings();
 }
 
