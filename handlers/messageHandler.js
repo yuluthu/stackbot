@@ -157,7 +157,7 @@ handler.removeusers = ({ msg, messageSplit, server }) => {
 
 handler.new = async ({ channel, messageSplit, server }) => {
     // TODO: make this allow a custom number of retrievals
-    let number = 5;
+    let number = 4;
 
     if (parseInt(messageSplit[2])) {
         number = parseInt(messageSplit[2]);
