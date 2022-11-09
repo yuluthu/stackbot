@@ -1,6 +1,7 @@
 const backend = require("./backend");
 
-commands = backend.getCommands()
+commands = backend.getCommands();
+settings = backend.getSettings();
 var handler = {};
 
 handler.message = async (msg) => {
@@ -135,6 +136,11 @@ handler.clear = async ({ msg, server }) => {
     }
 };
 
+handler.updateSetting = ({ msg, messageSplit, server }) => {
+    backend.setSetting(messageSplit[1], messageSplit[2], server.id);
+    settings = backend.getSettings();
+}
+
 handler.prioritise = ({ msg, messageSplit, server }) => {
     messageSplit.forEach((v) => {
         if (v.indexOf('<@!') !== -1) {
@@ -157,7 +163,7 @@ handler.removeusers = ({ msg, messageSplit, server }) => {
 
 handler.new = async ({ channel, messageSplit, server }) => {
     // TODO: make this allow a custom number of retrievals
-    let number = 4;
+    let number = settings[server.id].queueSize;
 
     if (parseInt(messageSplit[2])) {
         number = parseInt(messageSplit[2]);

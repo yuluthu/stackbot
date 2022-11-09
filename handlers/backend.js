@@ -2,8 +2,8 @@ const config = require("../config");
 
 var backend = {
     getCommands: () => {
-        let result = {}
-        let commandsCollection = db.collection('commands')
+        let result = {};
+        let commandsCollection = db.collection('commands');
         let search = commandsCollection.find({}).sort({isAdmin: -1});
 
         search.forEach(command => {
@@ -12,6 +12,34 @@ var backend = {
         });
 
         return result;
+    },
+    getSettings: () => {
+        let result = {};
+        let settingsCollection = db.collection('settings');
+        let search = settingsCollection.find({});
+
+        let defaultSettings = {
+            queueSize: 4
+        };
+
+        search.forEach(setting => {
+            if (!result[setting.serverId]) {
+                result[setting.serverId] = defaultSettings;
+            }
+            
+            result[setting.serverId][setting.name] = setting.value;
+        });
+        return result;
+    },
+    setSetting: (setting, value, serverId) => {
+        let settingsCollection = db.collection('settings');
+        let selector = {serverId, setting};
+        let search = settingsCollection.findOne(selector);
+        if (search) {
+            settingsCollection.updateOne(selector, {$set: {value}})
+        } else {
+            settingsCollection.insertOne({serverId, setting, value})
+        }
     },
     getServerRoles: async (serverId) => {
         let rolesCollection = db.collection('admin_roles');
